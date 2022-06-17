@@ -30,6 +30,10 @@ function sanitizeOptions(userOptions) {
         sanitizedOptions.orderPreference = userOptions.orderPreference;
     }
 
+    if (Array.isArray(userOptions.extensions)) {
+        sanitizedOptions.extensions = userOptions.extensions;
+    }
+
     prepareServeStaticOptions(userOptions, sanitizedOptions);
 
     return sanitizedOptions;
@@ -54,7 +58,7 @@ function prepareServeStaticOptions(userOptions, sanitizedOptions) {
  * @param {expressStaticGzip.ExpressStaticGzipOptions} sanitizedOptions 
  */
 function copyServeStaticOptions(userOptions, sanitizedOptions) {
-    var staticGzipOptionsProperties = ['cacheControl', 'dotfiles', 'etag', 'extensions', 'index', 'fallthrough', 'immutable', 'lastModified', 'maxAge', 'redirect', 'setHeaders'];
+    var staticGzipOptionsProperties = ['cacheControl', 'dotfiles', 'etag', 'index', 'fallthrough', 'immutable', 'lastModified', 'maxAge', 'redirect', 'setHeaders'];
 
     for (var propertyIdx in staticGzipOptionsProperties) {
         var property = staticGzipOptionsProperties[propertyIdx];
