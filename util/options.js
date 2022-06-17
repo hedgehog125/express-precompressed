@@ -1,5 +1,5 @@
 module.exports = {
-    sanitizeOptions: sanitizeOptions
+	sanitizeOptions: sanitizeOptions
 };
 
 /**
@@ -9,34 +9,34 @@ module.exports = {
  * @returns {expressStaticGzip.ExpressStaticGzipOptions}
  */
 function sanitizeOptions(userOptions) {
-    userOptions = userOptions || {};
+	userOptions = userOptions || {};
 
-    /**
-     * @type {expressStaticGzip.ExpressStaticGzipOptions}
-     */
-    let sanitizedOptions = {
-        index: getIndexValue(userOptions)
-    }
+	/**
+	 * @type {expressStaticGzip.ExpressStaticGzipOptions}
+	 */
+	let sanitizedOptions = {
+		index: getIndexValue(userOptions)
+	}
 
-    if (typeof (userOptions.enableBrotli) !== "undefined") {
-        sanitizedOptions.enableBrotli = !!userOptions.enableBrotli;
-    }
+	if (typeof (userOptions.enableBrotli) !== "undefined") {
+		sanitizedOptions.enableBrotli = !!userOptions.enableBrotli;
+	}
 
-    if (typeof (userOptions.customCompressions) === "object") {
-        sanitizedOptions.customCompressions = userOptions.customCompressions;
-    }
+	if (typeof (userOptions.customCompressions) === "object") {
+		sanitizedOptions.customCompressions = userOptions.customCompressions;
+	}
 
-    if (typeof (userOptions.orderPreference) === "object") {
-        sanitizedOptions.orderPreference = userOptions.orderPreference;
-    }
+	if (typeof (userOptions.orderPreference) === "object") {
+		sanitizedOptions.orderPreference = userOptions.orderPreference;
+	}
 
-    if (Array.isArray(userOptions.extensions)) {
-        sanitizedOptions.extensions = userOptions.extensions;
-    }
+	if (Array.isArray(userOptions.extensions)) {
+		sanitizedOptions.extensions = userOptions.extensions;
+	}
 
-    prepareServeStaticOptions(userOptions, sanitizedOptions);
+	prepareServeStaticOptions(userOptions, sanitizedOptions);
 
-    return sanitizedOptions;
+	return sanitizedOptions;
 }
 
 /**
@@ -45,11 +45,11 @@ function sanitizeOptions(userOptions) {
  * @param {expressStaticGzip.ExpressStaticGzipOptions} sanitizedOptions
  */
 function prepareServeStaticOptions(userOptions, sanitizedOptions) {
-    if (typeof (userOptions.serveStatic) !== 'undefined') {
-        sanitizedOptions.serveStatic = userOptions.serveStatic;
-    }
+	if (typeof (userOptions.serveStatic) !== 'undefined') {
+		sanitizedOptions.serveStatic = userOptions.serveStatic;
+	}
 
-    copyServeStaticOptions(userOptions, sanitizedOptions);
+	copyServeStaticOptions(userOptions, sanitizedOptions);
 }
 
 /**
@@ -58,15 +58,15 @@ function prepareServeStaticOptions(userOptions, sanitizedOptions) {
  * @param {expressStaticGzip.ExpressStaticGzipOptions} sanitizedOptions 
  */
 function copyServeStaticOptions(userOptions, sanitizedOptions) {
-    var staticGzipOptionsProperties = ['cacheControl', 'dotfiles', 'etag', 'index', 'fallthrough', 'immutable', 'lastModified', 'maxAge', 'redirect', 'setHeaders'];
+	var staticGzipOptionsProperties = ['cacheControl', 'dotfiles', 'etag', 'index', 'fallthrough', 'immutable', 'lastModified', 'maxAge', 'redirect', 'setHeaders'];
 
-    for (var propertyIdx in staticGzipOptionsProperties) {
-        var property = staticGzipOptionsProperties[propertyIdx];
+	for (var propertyIdx in staticGzipOptionsProperties) {
+		var property = staticGzipOptionsProperties[propertyIdx];
 
-        if (typeof (userOptions[property]) !== 'undefined' && (!sanitizedOptions.serveStatic || typeof (sanitizedOptions.serveStatic[property]) === 'undefined')) {
-            setStaticGzipOptionsProperty(sanitizedOptions, property, userOptions[property]);
-        }
-    }
+		if (typeof (userOptions[property]) !== 'undefined' && (!sanitizedOptions.serveStatic || typeof (sanitizedOptions.serveStatic[property]) === 'undefined')) {
+			setStaticGzipOptionsProperty(sanitizedOptions, property, userOptions[property]);
+		}
+	}
 }
 
 /**
@@ -76,11 +76,11 @@ function copyServeStaticOptions(userOptions, sanitizedOptions) {
  * @param {any} value 
  */
 function setStaticGzipOptionsProperty(sanitizedOptions, property, value) {
-    if (typeof (sanitizedOptions.serveStatic) !== 'object') {
-        sanitizedOptions.serveStatic = {};
-    }
+	if (typeof (sanitizedOptions.serveStatic) !== 'object') {
+		sanitizedOptions.serveStatic = {};
+	}
 
-    sanitizedOptions.serveStatic[property] = value;
+	sanitizedOptions.serveStatic[property] = value;
 }
 
 /**
@@ -88,11 +88,11 @@ function setStaticGzipOptionsProperty(sanitizedOptions, property, value) {
  * @param {expressStaticGzip.ExpressStaticGzipOptions} options 
  */
 function getIndexValue(options) {
-    if (typeof (options.indexFromEmptyFile) === "undefined" && typeof (options.index) !== "undefined") {
-        return options.index;
-    } else if (typeof (options.index) === "undefined" && typeof (options.indexFromEmptyFile) !== "undefined") {
-        return options.indexFromEmptyFile;
-    } else {
-        return 'index.html';
-    }
+	if (typeof (options.indexFromEmptyFile) === "undefined" && typeof (options.index) !== "undefined") {
+		return options.index;
+	} else if (typeof (options.index) === "undefined" && typeof (options.indexFromEmptyFile) !== "undefined") {
+		return options.indexFromEmptyFile;
+	} else {
+		return 'index.html';
+	}
 }
