@@ -93,6 +93,6 @@ function getIndexValue(options) {
 	} else if (typeof (options.index) === "undefined" && typeof (options.indexFromEmptyFile) !== "undefined") {
 		return options.indexFromEmptyFile;
 	} else {
-		return 'index.html';
+		return "index.html";
 	}
 }

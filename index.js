@@ -1,6 +1,15 @@
+/*
+TODO
+
+Handle no compression request from client
+Dot files and other options
+*/
+
 const fs = require("fs");
-const pathModule = require("path");
+const path = require("path");
 const mime = require("mime-types");
+
+__dirname = path.join(__dirname, "../../"); // Go to the root of the program
 
 let sanitizeOptions = require("./util/options").sanitizeOptions;
 let findEncoding = require("./util/encoding-selection").findEncoding;
@@ -16,9 +25,13 @@ module.exports = expressStaticGzipMiddleware;
  * @returns express middleware function
  */
 function expressStaticGzipMiddleware(root, uncompressedRoot, options) {
+	root = removeEndingSlash(root);
+	uncompressedRoot = removeEndingSlash(uncompressedRoot);
 	let opts = sanitizeOptions(options);
-	let compressions = [];
+
+	let compressions = {};
 	let files = {};
+
 
 	registerCompressions();
 	indexRoot();
@@ -26,31 +39,29 @@ function expressStaticGzipMiddleware(root, uncompressedRoot, options) {
 	return expressStaticGzip;
 
 	function expressStaticGzip(req, res, next) {
-		changeUrlFromDirectoryToIndexFile(req);
-
-		let clientsAcceptedEncodings = req.headers["accept-encoding"];
-
-		let path = "";
+		let requestPath = req.path;
 		try {
-			path = decodeURIComponent(req.path);
-		} catch (e) {
-			res.status(400).send(e.message);
+			requestPath = decodeURIComponent(requestPath);
+		} catch (error) {
+			next();
 			return;
 		}
 
-		let compressedFileInfo = files[path];
+		if (requestPath == "" || requestPath == "/") {
+			requestPath = opts.index;
+		}
+
+		let compressedFileInfo = files[requestPath];
 		if (compressedFileInfo) {
-			if (compression) {
-				sendCompressed(req, res, compressedFileInfo);
-				return;
-			}
+			sendCompressed(req, res, compressedFileInfo);
+			return;
 		}
 
 		next();
 	}
 
 	function registerCompressions() {
-		if (opts.customCompressions && opts.customCompressions.length > 0) {
+		if (opts.customCompressions && opts.customCompressions.length != 0) {
 			for (let customCompression of opts.customCompressions) {
 				registerCompression(
 					customCompression.encodingName,
@@ -66,17 +77,29 @@ function expressStaticGzipMiddleware(root, uncompressedRoot, options) {
 		registerCompression("gzip", "gz");
 	}
 
+	/**
+	 * Registers a new compression to the module.
+	 * @param {string} encodingName
+	 * @param {string} fileExtension
+	 */
+	 function registerCompression(encodingName, fileExtension) {
+		if (compressions[fileExtension] == null) {
+			compressions[fileExtension] = new Compression(encodingName, fileExtension);
+		}
+	}
+
 	function sendCompressed(req, res, compressedFileInfo) {
+		let clientsAcceptedEncodings = req.headers["accept-encoding"];
 		let compression = findEncoding(
 			clientsAcceptedEncodings,
 			compressedFileInfo.compressions,
 			opts.orderPreference
 		);
 
-		let type = mime.extension(req.path) || "application/octet-stream"; // It's fine to use the URL like this because it's already an approved URL
+		let type = mime.lookup(compressedFileInfo.filePath) || "application/octet-stream";
 		let charset = mime.charset(type);
 
-		res.sendFile(compressedFileInfo.mainPath + compression.fileExtension, {
+		res.sendFile(compressedFileInfo.filePath + compression.fileExtension, {
 			headers: {
 				"Content-Type": type + (charset? "; charset=" + charset : ""),
 				"Content-Encoding": compression.encodingName,
@@ -85,31 +108,23 @@ function expressStaticGzipMiddleware(root, uncompressedRoot, options) {
 		});
 	}
 
-	function changeUrlFromDirectoryToIndexFile(req) {
-		const parts = req.url.split('?');
-		if (opts.index && parts[0].endsWith("/")) {
-			parts[0] += opts.index;
-			req.url = parts.length > 1 ? parts.join('?') : parts[0];
-		}
-	}
-
 	function indexRoot() {
-		if (compressions.length > 0) {
-			findCompressedFilesInDirectory(root);
-		}
+		indexFolder(root);
 	}
 
-	function findCompressedFilesInDirectory(directoryPath) {
-		if (!fs.existsSync(directoryPath)) return;
+	function indexFolder(directoryPath) {
+		let fullFolderPath = path.join(__dirname, directoryPath);
+		if (! fs.existsSync(fullFolderPath)) return;
 
-		let filesInDirectory = fs.readdirSync(directoryPath);
+		let filesInDirectory = fs.readdirSync(fullFolderPath);
 		for (let file of filesInDirectory) {
 			let filePath = directoryPath + "/" + file;
-			let stats = fs.statSync(filePath);
-			if (stats.isDirectory()) {
-				findCompressedFilesInDirectory(filePath);
+			let fileInfo = fs.statSync(filePath);
+
+			if (fileInfo.isDirectory()) {
+				indexFolder(filePath);
 			} else {
-				addMatchingCompressionsToFile(file, filePath);
+				addFileCompressions(file, filePath);
 			}
 		}
 	}
@@ -120,18 +135,25 @@ function expressStaticGzipMiddleware(root, uncompressedRoot, options) {
 	 * @param {string} fileName
 	 * @param {string} fillFilePath
 	 */
-	function addMatchingCompressionsToFile(fileName, fullFilePath) {
-		for (let compression of compressions) {
-			if (fileName.endsWith(compression.fileExtension)) {
-				addCompressionToFile(fullFilePath, compression);
+	function addFileCompressions(fileName, fullFilePath) {
+		// Remove the compression file extension in fullFilePath
+		fullFilePath = fullFilePath.split(".");
+		let compressionExtension = fullFilePath.pop();
+		fullFilePath = fullFilePath.join(".");
 
-				for (let ext of opts.extensions) {
-					if (fileName.endsWith(`.${ext}${compression.fileExtension}`)) {
-						let noExtension = fullFilePath.slice(0, fullFilePath.lastIndexOf(`.${ext}`));
-						addCompressionToFile(noExtension, compression, `.${ext}`);
-					}
+		let noExtension = fullFilePath.split(".");
+		if (noExtension.length != 1) noExtension.pop();
+		noExtension = noExtension.join(".");
+
+		let compression = compressions[compressionExtension];
+		if (compression) {
+			addCompressionToFile(fullFilePath, compression, "");
+
+			for (let ext of opts.extensions) {
+				if (fileName.endsWith(`.${ext}${compression.fileExtension}`)) {
+					addCompressionToFile(noExtension, compression, `.${ext}`);
+					break;
 				}
-				return;
 			}
 		}
 	}
@@ -140,32 +162,19 @@ function expressStaticGzipMiddleware(root, uncompressedRoot, options) {
 	 * Adds the compression to the file's list of available compressions
 	 * @param {string} filePath
 	 * @param {Compression} compression
+	 * @param {string} missingExtension
 	 */
 	function addCompressionToFile(filePath, compression, missingExtension) {
-		let srcFilePath = filePath
-			.replace(root, "")
-			.replace(compression.fileExtension, "");
-		let existingFile = files[srcFilePath];
+		let urlFilePath = filePath.replace(root + "/", "");
+		let existingFile = files[urlFilePath];
 
 		if (existingFile) {
 			existingFile.compressions.push(compression);
 		} else {
-			files[srcFilePath] = {
+			files[urlFilePath] = {
 				compressions: [compression],
-				mainPath: pathModule.join(__dirname, `${filePath}${missingExtension}`)
+				filePath: path.join(__dirname, `${filePath}${missingExtension}`)
 			};
-			console.log(files[srcFilePath].mainPath);
-		}
-	}
-
-	/**
-	 * Registers a new compression to the module.
-	 * @param {string} encodingName
-	 * @param {string} fileExtension
-	 */
-	function registerCompression(encodingName, fileExtension) {
-		if (!findCompressionByName(encodingName)) {
-			compressions.push(new Compression(encodingName, fileExtension));
 		}
 	}
 
@@ -179,17 +188,9 @@ function expressStaticGzipMiddleware(root, uncompressedRoot, options) {
 		this.fileExtension = "." + fileExtension;
 	}
 
-	/**
-	 * @param {string} encodingName
-	 * @returns {{encodingName:string, fileExtension:string}}
-	 */
-	function findCompressionByName(encodingName) {
-		for (let compression of compressions) {
-			if (compression.encodingName === encodingName) {
-				return compression;
-			}
-		}
+	function removeEndingSlash(path) {
+		if (path.at(-1) == "/") return path.slice(0, path.length - 1);
 
-		return null;
+		return path;
 	}
 }
