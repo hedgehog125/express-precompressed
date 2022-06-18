@@ -50,6 +50,9 @@ function expressStaticGzipMiddleware(root, uncompressedRoot, options) {
 		if (requestPath == "" || requestPath == "/") {
 			requestPath = opts.index;
 		}
+		else if (requestPath[0] == "/") {
+			requestPath = requestPath.slice(1);
+		}
 
 		let compressedFileInfo = files[requestPath];
 		if (compressedFileInfo) {
