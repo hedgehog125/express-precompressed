@@ -8,6 +8,7 @@ Dot files and other options
 const fs = require("fs/promises");
 const path = require("path");
 const mime = require("mime-types");
+const { resolve } = require("path");
 
 __dirname = path.join(__dirname, "../../"); // Go to the root of the program
 
@@ -125,17 +126,30 @@ async function expressStaticGzipMiddleware(root, uncompressedRoot, options) {
 	async function indexFolder(directoryPath) {
 		let fullFolderPath = path.join(__dirname, directoryPath);
 
+		// Read the files in parrelel for efficiency
+		let finished;
+		let finishedPromise = new Promise(resolve => {
+			finished = resolve; // Let the file promises resolve this promise
+		});
+		let fileTasks = [];
+		
 		let filesInDirectory = await fs.readdir(fullFolderPath);
+		let remaining = filesInDirectory.length;
 		for (let file of filesInDirectory) {
 			let filePath = directoryPath + "/" + file;
-			let fileInfo = await fs.stat(filePath);
+			fileTasks.push(fs.stat(filePath).then(async fileInfo => {
+				if (fileInfo.isDirectory()) {
+					await indexFolder(filePath);
+				} else {
+					addFileCompressions(file, filePath);
+				}
 
-			if (fileInfo.isDirectory()) {
-				await indexFolder(filePath);
-			} else {
-				addFileCompressions(file, filePath);
-			}
+				remaining--;
+				if (remaining == 0) finished();
+			}));
 		}
+
+		await finishedPromise;
 	}
 
 	/**
