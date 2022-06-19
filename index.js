@@ -5,7 +5,7 @@ Handle no compression request from client
 Dot files and other options
 */
 
-const fs = require("fs");
+const fs = require("fs/promises");
 const path = require("path");
 const mime = require("mime-types");
 
@@ -24,7 +24,7 @@ module.exports = expressStaticGzipMiddleware;
  * @param { expressStaticGzip.ExpressStaticGzipOptions } options: options to change module behaviour
  * @returns express middleware function
  */
-function expressStaticGzipMiddleware(root, uncompressedRoot, options) {
+async function expressStaticGzipMiddleware(root, uncompressedRoot, options) {
 	root = removeEndingSlash(root);
 	uncompressedRoot = removeEndingSlash(uncompressedRoot);
 	let opts = sanitizeOptions(options);
@@ -34,7 +34,7 @@ function expressStaticGzipMiddleware(root, uncompressedRoot, options) {
 
 
 	registerCompressions();
-	indexRoot();
+	await indexRoot();
 
 	return expressStaticGzip;
 
@@ -57,7 +57,6 @@ function expressStaticGzipMiddleware(root, uncompressedRoot, options) {
 		let compressedFileInfo = files[requestPath];
 		if (compressedFileInfo) {
 			sendCompressed(req, res, compressedFileInfo);
-			return;
 		}
 
 		next();
@@ -111,21 +110,28 @@ function expressStaticGzipMiddleware(root, uncompressedRoot, options) {
 		});
 	}
 
-	function indexRoot() {
-		indexFolder(root);
+	async function indexRoot() {
+		let fullFolderPath = path.join(__dirname, root);
+		try {
+			await fs.stat(fullFolderPath);
+		}
+		catch {
+			throw new Error(`Root path does not exist. Full path: ${fullFolderPath}`);
+		}
+
+		await indexFolder(root);
 	}
 
-	function indexFolder(directoryPath) {
+	async function indexFolder(directoryPath) {
 		let fullFolderPath = path.join(__dirname, directoryPath);
-		if (! fs.existsSync(fullFolderPath)) return;
 
-		let filesInDirectory = fs.readdirSync(fullFolderPath);
+		let filesInDirectory = await fs.readdir(fullFolderPath);
 		for (let file of filesInDirectory) {
 			let filePath = directoryPath + "/" + file;
-			let fileInfo = fs.statSync(filePath);
+			let fileInfo = await fs.stat(filePath);
 
 			if (fileInfo.isDirectory()) {
-				indexFolder(filePath);
+				await indexFolder(filePath);
 			} else {
 				addFileCompressions(file, filePath);
 			}
