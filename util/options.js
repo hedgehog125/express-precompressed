@@ -35,53 +35,7 @@ function sanitizeOptions(userOptions) {
 		sanitizedOptions.extensions = userOptions.extensions;
 	}
 
-	prepareServeStaticOptions(userOptions, sanitizedOptions);
-
 	return sanitizedOptions;
-}
-
-/**
- * 
- * @param {expressStaticGzip.ExpressStaticGzipOptions} userOptions 
- * @param {expressStaticGzip.ExpressStaticGzipOptions} sanitizedOptions
- */
-function prepareServeStaticOptions(userOptions, sanitizedOptions) {
-	if (typeof (userOptions.serveStatic) !== 'undefined') {
-		sanitizedOptions.serveStatic = userOptions.serveStatic;
-	}
-
-	copyServeStaticOptions(userOptions, sanitizedOptions);
-}
-
-/**
- * Used to be backwards compatible by copying options in root level to the serveStatic options property.
- * @param {expressStaticGzip.ExpressStaticGzipOptions} userOptions 
- * @param {expressStaticGzip.ExpressStaticGzipOptions} sanitizedOptions 
- */
-function copyServeStaticOptions(userOptions, sanitizedOptions) {
-	var staticGzipOptionsProperties = ['cacheControl', 'dotfiles', 'etag', 'index', 'fallthrough', 'immutable', 'lastModified', 'maxAge', 'redirect', 'setHeaders'];
-
-	for (var propertyIdx in staticGzipOptionsProperties) {
-		var property = staticGzipOptionsProperties[propertyIdx];
-
-		if (typeof (userOptions[property]) !== 'undefined' && (!sanitizedOptions.serveStatic || typeof (sanitizedOptions.serveStatic[property]) === 'undefined')) {
-			setStaticGzipOptionsProperty(sanitizedOptions, property, userOptions[property]);
-		}
-	}
-}
-
-/**
- * 
- * @param {expressStaticGzip.ExpressStaticGzipOptions} sanitizedOptions 
- * @param {string} property 
- * @param {any} value 
- */
-function setStaticGzipOptionsProperty(sanitizedOptions, property, value) {
-	if (typeof (sanitizedOptions.serveStatic) !== 'object') {
-		sanitizedOptions.serveStatic = {};
-	}
-
-	sanitizedOptions.serveStatic[property] = value;
 }
 
 /**
@@ -89,9 +43,9 @@ function setStaticGzipOptionsProperty(sanitizedOptions, property, value) {
  * @param {expressStaticGzip.ExpressStaticGzipOptions} options 
  */
 function getIndexValue(options) {
-	if (typeof (options.indexFromEmptyFile) === "undefined" && typeof (options.index) !== "undefined") {
+	if (typeof (options.indexFromEmptyFile) == "undefined" && typeof (options.index) != "undefined") {
 		return options.index;
-	} else if (typeof (options.index) === "undefined" && typeof (options.indexFromEmptyFile) !== "undefined") {
+	} else if (typeof (options.index) == "undefined" && typeof (options.indexFromEmptyFile) != "undefined") {
 		return options.indexFromEmptyFile;
 	} else {
 		return "index.html";

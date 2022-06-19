@@ -11,7 +11,6 @@ const NO_COMPRESSION = "identity";
  */
 function findEncoding(acceptEncoding, availableCompressions, preference) {
 	if (acceptEncoding) {
-		debugger;
 		let sortedEncodingList = parseEncoding(acceptEncoding);
 		sortedEncodingList = takePreferenceIntoAccount(
 			sortedEncodingList,
