@@ -9,13 +9,14 @@ module.exports = {
  * @returns {expressStaticGzip.ExpressStaticGzipOptions}
  */
 function sanitizeOptions(userOptions) {
-	userOptions = userOptions || {};
+	userOptions = userOptions?? {};
 
 	/**
 	 * @type {expressStaticGzip.ExpressStaticGzipOptions}
 	 */
 	let sanitizedOptions = {
-		index: getIndexValue(userOptions)
+		index: getIndexValue(userOptions),
+		disableCompression: userOptions.disableCompression?? false
 	}
 
 	if (typeof (userOptions.enableBrotli) !== "undefined") {

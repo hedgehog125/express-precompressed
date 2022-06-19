@@ -1,7 +1,7 @@
 // see https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Accept-Encoding
 
 // Indicates the identity function (i.e. no compression, nor modification)
-const IDENTITY = 'identity';
+const NO_COMPRESSION = "identity";
 
 /**
  *
@@ -11,18 +11,20 @@ const IDENTITY = 'identity';
  */
 function findEncoding(acceptEncoding, availableCompressions, preference) {
 	if (acceptEncoding) {
+		debugger;
 		let sortedEncodingList = parseEncoding(acceptEncoding);
 		sortedEncodingList = takePreferenceIntoAccount(
 			sortedEncodingList,
 			preference
 		);
+
 		return findFirstMatchingCompression(
 			sortedEncodingList,
 			availableCompressions
 		);
 	}
 
-	return null;
+	return "none";
 }
 
 function findFirstMatchingCompression(
@@ -30,16 +32,16 @@ function findFirstMatchingCompression(
 	availableCompressions
 ) {
 	for (const encoding of sortedEncodingList) {
-		if (encoding === IDENTITY) {
-			return null;
+		if (encoding == NO_COMPRESSION) {
+			return "none";
 		}
 		for (let availableCompression of availableCompressions) {
-			if (encoding === '*' || encoding === availableCompression.encodingName) {
+			if (encoding == "*" || encoding == availableCompression.encodingName) {
 				return availableCompression;
 			}
 		}
 	}
-	return null;
+	return "none";
 }
 
 /**
@@ -48,16 +50,16 @@ function findFirstMatchingCompression(
  * @param {string[]} preferences
  */
 function takePreferenceIntoAccount(sortedEncodingList, preferences) {
-	if (!preferences || preferences.length === 0) {
+	if ((! preferences) || preferences.length == 0) {
 		return sortedEncodingList;
 	}
 
 	for (let i = preferences.length - 1; i >= 0; i--) {
 		let pref = preferences[i];
-		let matchIdx = sortedEncodingList.indexOf(pref);
+		let existingPrefIndex = sortedEncodingList.indexOf(pref);
 
-		if (matchIdx >= 0) {
-			sortedEncodingList.splice(matchIdx, 1);
+		if (existingPrefIndex != -1) {
+			sortedEncodingList.splice(existingPrefIndex, 1);
 			sortedEncodingList.splice(0, 0, pref);
 		}
 	}
@@ -70,12 +72,15 @@ function takePreferenceIntoAccount(sortedEncodingList, preferences) {
  * @param {string} acceptedEncoding
  */
 function parseEncoding(acceptedEncoding) {
-	return acceptedEncoding
-		.split(',')
+	acceptedEncoding = acceptedEncoding
+		.split(",")
 		.map((encoding) => parseQuality(encoding))
 		.sort((encodingA, encodingB) => encodingB.q - encodingA.q)
-		.filter((encoding) => encoding.q > 0)
+		.filter((encoding) => encoding.q != 0)
 		.map((encoding) => encoding.name);
+
+	acceptedEncoding.push("none");
+	return acceptedEncoding;
 }
 
 /**
@@ -84,22 +89,23 @@ function parseEncoding(acceptedEncoding) {
  * @returns {{name: string, q: number}[]}
  */
 function parseQuality(encoding) {
-	let eSplit = encoding.split(';');
+	let eSplit = encoding.split(";");
 	try {
 		if (eSplit.length > 1) {
 			const num = eSplit[1].trim().match(/q=(.*)/)[1];
 			return {
 				name: eSplit[0].trim(),
-				q: parseFloat(num),
+				q: parseFloat(num)
 			};
 		}
-	} catch (ex) {}
+	} catch {}
+
 	return {
 		name: eSplit[0].trim(),
-		q: 1,
+		q: 1
 	};
 }
 
 module.exports = {
-	findEncoding: findEncoding,
+	findEncoding: findEncoding
 };
