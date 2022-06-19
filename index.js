@@ -2,6 +2,7 @@
 TODO
 
 Create variation of index for when compression is off
+Proper error handling. Including checking if the uncompressed version exists
 
 Dot files and other options
 */
@@ -63,7 +64,7 @@ function expressStaticGzipMiddleware(root, uncompressedRoot, options) {
 
 		let compressedFileInfo = files[requestPath];
 		if (compressedFileInfo) {
-			return sendCompressed(req, res, next, compressedFileInfo);
+			return sendCompressed(req, res, compressedFileInfo);
 		}
 
 		next();
@@ -110,7 +111,7 @@ function expressStaticGzipMiddleware(root, uncompressedRoot, options) {
 		}
 	}
 
-	function sendCompressed(req, res, next, compressedFileInfo) {
+	function sendCompressed(req, res, compressedFileInfo) {
 		let clientsAcceptedEncodings = req.headers["accept-encoding"];
 		let compression;
 		if (opts.disableCompression) {
@@ -129,10 +130,10 @@ function expressStaticGzipMiddleware(root, uncompressedRoot, options) {
 			return res.sendFile(filePath);
 		}
 		else {
-			let type = mime.lookup(compressedFileInfo.filePath) || "application/octet-stream";
+			let type = mime.lookup(compressedFileInfo.incompletePath) || "application/octet-stream";
 			let charset = mime.charset(type);
 	
-			let filePath = path.join(root, compressedFileInfo.incompletePath) + compression.fileExtension;
+			let filePath = path.join(__dirname, root, compressedFileInfo.incompletePath) + compression.fileExtension;
 			return res.sendFile(filePath, {
 				headers: {
 					"Content-Type": type + (charset? "; charset=" + charset : ""),

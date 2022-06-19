@@ -12,27 +12,23 @@ const NO_COMPRESSION = "identity";
 function findEncoding(acceptEncoding, availableCompressions, preference) {
 	if (acceptEncoding) {
 		let sortedEncodingList = parseEncoding(acceptEncoding);
-		sortedEncodingList = takePreferenceIntoAccount(
+		sortedEncodingList = sortByPreference(
 			sortedEncodingList,
 			preference
 		);
 
-		return findFirstMatchingCompression(
+		return findMatchingCompression(
 			sortedEncodingList,
 			availableCompressions
 		);
 	}
-
-	return "none";
+	return findUncompressed(availableCompressions);
 }
 
-function findFirstMatchingCompression(
-	sortedEncodingList,
-	availableCompressions
-) {
+function findMatchingCompression(sortedEncodingList, availableCompressions) {
 	for (const encoding of sortedEncodingList) {
 		if (encoding == NO_COMPRESSION) {
-			return "none";
+			return findUncompressed(availableCompressions);
 		}
 		for (let availableCompression of availableCompressions) {
 			if (encoding == "*" || encoding == availableCompression.encodingName) {
@@ -40,7 +36,7 @@ function findFirstMatchingCompression(
 			}
 		}
 	}
-	return "none";
+	return findUncompressed(availableCompressions);
 }
 
 /**
@@ -48,7 +44,7 @@ function findFirstMatchingCompression(
  * @param {string[]} sortedEncodingList
  * @param {string[]} preferences
  */
-function takePreferenceIntoAccount(sortedEncodingList, preferences) {
+function sortByPreference(sortedEncodingList, preferences) {
 	if ((! preferences) || preferences.length == 0) {
 		return sortedEncodingList;
 	}
@@ -68,18 +64,18 @@ function takePreferenceIntoAccount(sortedEncodingList, preferences) {
 
 /**
  *
- * @param {string} acceptedEncoding
+ * @param {string} acceptedEncodings
  */
-function parseEncoding(acceptedEncoding) {
-	acceptedEncoding = acceptedEncoding
+function parseEncoding(acceptedEncodings) {
+	acceptedEncodings = acceptedEncodings
 		.split(",")
 		.map((encoding) => parseQuality(encoding))
 		.sort((encodingA, encodingB) => encodingB.q - encodingA.q)
 		.filter((encoding) => encoding.q != 0)
 		.map((encoding) => encoding.name);
 
-	acceptedEncoding.push("none");
-	return acceptedEncoding;
+	acceptedEncodings.push("none");
+	return acceptedEncodings;
 }
 
 /**
@@ -103,6 +99,10 @@ function parseQuality(encoding) {
 		name: eSplit[0].trim(),
 		q: 1
 	};
+}
+
+function findUncompressed(availableCompressions) {
+	return availableCompressions.find(compression => compression.encodingName == "none");
 }
 
 module.exports = {
