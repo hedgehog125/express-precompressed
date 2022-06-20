@@ -1,10 +1,16 @@
 /*
 TODO
 
-Create variation of index for when compression is off
+Use try around readdir instead of stat to marginally speed up indexing 
+Dot files, headers object and headers function (as 2 different arguments because types. Or maybe not because index option)
+Does using a pattern in app.use work? It should result in a prefix which has to be accounted for by putting everything in a folder
+Absolute path support
 Proper error handling. Including checking if the uncompressed version exists
+Slight optimisations, reduce repetition in incomplete path by relying on the path in the key?
+Check security, particularly around reading files and relative paths and stuff. Can you escape with ../ etc?
+Suggested preference option. Only applies if the client never states any preferences. Should remove default for orderPreference and rename it strongOrderPreferene. Or allow weighting the server's preference and compare that to client's
 
-Dot files and other options
+One argument syntax could result in only serving compressed files. Or potentially just disabling the warnings (could be confusing though)
 */
 
 const fs = require("fs/promises");
@@ -16,19 +22,16 @@ __dirname = path.join(__dirname, "../../"); // Go to the root of the program
 let sanitizeOptions = require("./util/options").sanitizeOptions;
 let findEncoding = require("./util/encoding-selection").findEncoding;
 
-module.exports = expressStaticGzipMiddleware;
+module.exports = expressPrecompressed;
 
 /**
- * Generates a middleware function to serve pre-compressed files. It just uses the express sendFile method.
- * The pre-compressed files need to be placed next to the original files, in the provided `root` directory.
- * @param { string } root: directory to staticly serve files from
- * @param { string } uncompressedRoot: the folder containing the uncompressed files. This is used for clients that don't support compression, or for when you've disabled compression. Unless you've disabled compression, you need to make sure this contains the same files as the root, but obviously uncompressed (and with the same names minus the compression extension). This defaults to the same as the root folder but I'd recommend specifying a folder so you can organise and automate things better.
-	
-Any files unique to this folder won't be served unless compression is off. In which case this folder will be indexed instead.
- * @param { expressStaticGzip.ExpressStaticGzipOptions } options: options to change module behaviour
+ * Generates a middleware function to serve precompressed or uncompressed files. Put the compressed files in the `root` folder you specified and the uncompressed in the `uncompressedRoot` folder you specified. You can also set them to the same folder, which is the default for uncompressedRoot. But I'd recommend keeping them separate to organise things. 
+ * @param { string } root: The path to the folder containing your compressed files. These should have the original names just with the compression extension added onto the end.
+ * @param { string } uncompressedRoot: The path to your fallback, uncompressed files you want to serve. These are also used when you disable compression. I'd recommend using a different folder to root to keep things organised. Any files unique to this folder won't be served unless compression is off. In which case this folder will be indexed instead (which can be useful for testing).
+ * @param { expressStaticGzip.ExpressStaticGzipOptions } options: Options to change the middleware's behaviour
  * @returns express middleware function
  */
-function expressStaticGzipMiddleware(root, uncompressedRoot, options) {
+function expressPrecompressed(root, uncompressedRoot, options) {
 	root = removeEndingSlash(root);
 	uncompressedRoot = uncompressedRoot == null? root : removeEndingSlash(uncompressedRoot);
 	
@@ -72,10 +75,6 @@ function expressStaticGzipMiddleware(root, uncompressedRoot, options) {
 
 	async function asyncStartUp() {
 		startupTasks.index = indexRoot();
-
-		// TODO: just for testing
-		await startupTasks.index;
-		console.log(files);
 	}
 
 	function registerCompressions() {

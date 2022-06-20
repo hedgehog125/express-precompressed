@@ -16,7 +16,8 @@ function sanitizeOptions(userOptions) {
 	 */
 	let sanitizedOptions = {
 		index: getIndexValue(userOptions),
-		disableCompression: userOptions.disableCompression?? false
+		disableCompression: userOptions.disableCompression?? false,
+		orderPreference: ["br"]
 	}
 
 	if (typeof (userOptions.enableBrotli) !== "undefined") {

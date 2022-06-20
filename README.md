@@ -1,148 +1,156 @@
+# express-precompressed
+Npm page: [express-precompressed](https://www.npmjs.com/package/express-precompressed)
+Thanks TK and the other contributors for making the original repository: [express-static-gzip](https://github.com/tkoenig89/express-static-gzip)
 
-# express-static-gzip
+express-precompressed is a middleware similar to express.static, but it also supports compression. The code is based off of express-static-gzip, but it's been adapted to use express' sendFile method instead of serve-static. This slightly reduced the total number of dependencies, and also gave me the flexibility I needed to support some new features. 
 
-[![npm][npm-version-image]][npm-url]
-![Node CI](https://github.com/tkoenig89/express-static-gzip/workflows/Node%20CI/badge.svg?branch=master&event=push)
-[![npm][npm-downloads-image]][npm-url]
-[![Donate][donate-paypal-image]][donate-url]
-
-Provides a small layer on top of [*serve-static*](http://expressjs.com/en/resources/middleware/serve-static.html), which allows to serve pre-gzipped files. Supports *brotli* and allows configuring any other compression you can think of as well.
-
-If `express-static-gzip` saved you some time, feel free to buy me a cup of coffee :) [![Donate][donate-paypal-image]][donate-url]
+Speaking of which, here are the main features:
+    * Like express-static-gzip, express-precompressed supports *gzip*, *brotli* and can be configured for *any other* formats
+    * Uncompressed fallback (which can now be a different folder) and separate mode (useful for testing)
+    * Fallback extension support
+    * Serves pre-compressed files as opposed to compressing them on the fly. Making the package lightweight
 
 
 # Requirements
-For the `express-static-gzip` middleware to work properly you need to first ensure that you have all files gzipped (or compressed with your desired algorithm) which you want to serve as a compressed version to the browser.
-Simplest use case is to either have a folder with only .gz files, or you have a folder with the .gz files next to the original files. Same goes for other compressions.
+Unlike the original, express-precompressed can be used in an uncompressed mode, meaning you can even use it while you're developing your website. This makes the basic setup quite easy (as explained in Getting Started).
+
+But like the original, it still requires you compress each file yourself when you want to enable compression. Further instructions are also in Getting Started.
+
 
 # Install
-
+As usual it's:
 ```bash
-    $ npm install express-static-gzip
+    npm install express-precompressed --save
+```
+And if you don't want to add it as a dependency, just remove the --save.
+
+# Getting Started
+Once you've installed the package as explained above, require it with `js const serveCompressed = require("express-precompressed");` and then call it like this:
+```js
+...
+
+/*
+    root -> The path to where you'll later put the compressed files. These should have the original names just with the compression extension added onto the end
+    uncompressedRoot -> The path to your fallback, uncompressed files you want to serve. These are also used when you disable compression. I'd recommend using a different folder to root to keep things organised
+*/
+app.use(serveCompressed(<root>, <uncompressedRoot>, { // <-- Options
+	extensions: ["html"], // Works the same way as express.static: I use the option here so that visiting /foo for example, would result in foo.html being sent (unless you have a file called foo with no extension that is)
+	disableCompression: true
+}));
+
+...your express routes and app.listen call
+```
+**Note**: the paths currently have to be relative and are relative to the root of your program.
+
+This should behave more or less identically to express.static as `disableCompression` means it just serves the files in uncompressedRoot instead. This is how you do the very quick testing setup I mentioned previously. However, when you want to make a production version, you obviously want to actually enable the compression. You can do this by simply setting `disableCompression` to false. But, I'd suggest using a setup like this...
+```js
+    ...
+    disableCompression: ! config.serve.gzip // Or you might want to use an environment variable, or detect if it's running in production mode
+    ...
+```
+The second and third arguments are optional, so if you always want compression and don't want fallbacks you can also do:
+```js
+app.use(serveCompressed(<root>));
 ```
 
-# Changelog for v2.0
+And that folder obviously also needs to contain the compressed files. It's relatively easy to write a program to compress them all, but I might try and adapt my custom one for general use in the future. You can also use a bash command like gzip or just compress them individually. Just make sure all the file name are the same (but with the compression extension on the end) and the folder structure is the same.
 
-* Even so this is a mayor release, this should be fully backwards compatible and should not have any breaking change to v1.1.3.
+One other thing: gzip compression support is enabled by default, but you have to enable brotli with this in your options:
+```js
+    ...
+    enableBrotli: true
+    ...
+```
+If you want to add custom ones, see below.
 
-* Moved all options for `serveStatic` in its own section (`serveStatic`) to prevent collisions when setting up your static fileserving middleware. 
 
-* For backwards compatibility all root options that apply to `serveStatic` will be copied to the new `serveStatic` section, except if you have set values there already (no overwrite). Here is a small example of this behaviour:
-    ```JavaScript
-    {
-        enableBrotli: true,         // not a serverStatic option, will not be moved
-        maxAge: 123,                // not copied, as already present.
-        index: 'main.js',           // copied to serveStatic section
-        serveStatic: {
-            maxAge: 234,            // will be kept 
-            cacheControl: false     // will be kept as well
+# More advanced use cases
+## Compression
+Other compression formats can be added with the `customCompressions` option. For example, to add deflate support, just add this to your options:
+```js
+    ...
+    customCompressions: [
+        {
+            encodingName: "deflate", // The name used in the http accept-encoding header
+            fileExtension: "zz" // Make sure you don't start it with a dot
         }
-    }
-    ```
-
-    In the above scenario serveStatic will use `cacheControl`: false, `index`: 'main.js', `maxAge`:234.
-
-
-# Usage
-In case you just want to serve gzipped files only, this simple example would do:
-
-```javascript
-var express = require("express");
-var expressStaticGzip = require("express-static-gzip");
-var app = express();
-
-app.use("/", expressStaticGzip("/my/rootFolder/"));
+    ]
+    ...
 ```
+**Note**: gzip and brotli support is unaffected by this option.
 
-While gzip compression is always enabled you now have the choice to add other types of compressions using the *options* object. Currently *brotli* can be enabled using the **options.enableBrotli** flag.
-All other compressions need to be added by passing an array to **options.customCompressions**.
-The *options.serveStatic* section is passed to the underlying `serve-static` middleware, in case you want to configure this one as well.
+You can also override the client's priority for different compressions with the `orderPreference` option. At least the default of `js ["br"]` is currently necessary as most browsers don't seem to send a preference, and brotli offers better compression than gzip.
 
-The following example will show how to add brotli and deflate (with file extension *.zz*) to the middleware (it will still support gzip) and force brotli to be used if available (`orderPreference`):
+**Note**: other preferred formats and the client's preferred formats will be fallen back to if a preferred format isn't available for a file.
 
-```javascript
-var express = require('express');
-var expressStaticGzip = require('express-static-gzip');
-var app = express();
-
-app.use('/', expressStaticGzip('/my/rootFolder/', {
-    enableBrotli: true,
-    customCompressions: [{
-        encodingName: 'deflate',
-        fileExtension: 'zz'
-    }],
-    orderPreference: ['br']
+## Scoping to specific URL templates
+Like other middleware, you can also apply a pattern in app.use to only use it for some URLs. Normally this isn't necessary since if there isn't a matching file, the next middleware or route will handle the request instead. But if you do want to do this, make sure you create the necessary folders in both your compressed and uncompressed folders. e.g
+```js
+app.use("/static/", serveCompressed("gzippedFiles", "uncompressedFiles", {
+	extensions: ["html"]
 }));
 ```
+Where gzippedFiles and uncompressedFiles both contain a folder called static, which then contains all the files.
 
-Compressions are selected in the following order if a file is requested from the middleware:
-* any encoding listed in `option.orderPreference` and supported by the client
-* in order of the requests 'accept-encoding' header content (if no quality if provided)
-* in order of their respective quality (if provided)
-* in case of a wildcard '*', the compression is selected in alphabetical order (for now)
-* plain file (in case no compression exists or none is matching the browsers accept-encoding header)
+## A slight optimisation trick
+If you've got enough files that your server is taking a second to handle the first request, that's probably because the middleware's still indexing. Normally this takes less than 20 milliseconds but it can be more depending on the number of files and the speed of your server. One thing you can do to help with this, even if you just really want to shave off a few milliseconds, is to create the middleware right at the start of your program. This is because the middleware indexes asynchronously in the background, but has to pause handling a request if it hasn't finished yet. And that which can create a delay. By preparing the middleware early, it should be able to do at least some work in the background. This is especially the case if you're waiting for a lot of promises, ideally if they don't involve reading files.
 
-For more details see [here](https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Accept-Encoding), but not all of it is implemented at the moment.
+So your code should look something like this...
+```js
+...
+const main = async _ => {
+    let preparedStaticMiddleware = serveCompressed(<root>);
+    await someOtherSetupProcess;
 
-When the middleware is created it will check the given root folder and all subfolders for files matching the registered compression. **Adding files later to the folder will not be recognized by the middleware.**
+    app.use(preparedStaticMiddleware); // Note the middleware function is always technically 'ready' so even if it doesn't have enough time to get ready beforehand, this won't cause an error
 
-# Available options
-
-* **`enableBrotli`**: boolean (default: **false**)
-
-    Enables support for the brotli compression, using file extension 'br' (e.g. 'index.html.br').
-    
-* **`index`**: boolean | string (default: 'index.html')
-        
-    By default this module will send "index.html" files in response to a request on a directory (url ending with '/'). To disable this set false or to supply a new index file pass a string (like 'index.htm').
-
-* **`customCompressions`**: [{encodingName: string, fileExtension: string}]
-
-    Using this option, you can add any other compressions you would like. `encodingName` will be checked against the `Accept`-Header. `fileExtension` is used to find files using this compression. `fileExtension` does not require a dot (not ~~'.gz'~~, but `'gz'`).
-
-* **`orderPreference`**: string[]
-
-    This options allows overwriting the client's requested encoding preference (see [MDN](https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Accept-Encoding)) with a server side preference. Any encoding listed in `orderPreference` will be used first (if supported by the client) before falling back to the client's supported encodings. The order of entries in `orderPreference` is taken into account.
-
-* **`serveStatic`**: [ServeStaticOptions](https://github.com/expressjs/serve-static#options)
-    
-    This will be forwarded to the underlying `serveStatic` instance used by `expressStaticGzip`
-
-# Behavior warning
-
-In default mode a request for "/" or "\<somepath\>/" will serve index.html as compressed version. This could lead to **complications if you are serving a REST API** from the same path, when *express-server-static* is registered before your API. 
-
-One solution would be to register *express-server-static* last. Otherwise you can set **options.index** to false:
-
-```javascript
-app.use("/", expressStaticGzip("/my/rootFolder/", { index: false }));
+    // Set up the routes and call app.listen etc.
+    ...
+};
+main();
+...
 ```
 
-Because this middleware was developed for a static production server use case to maximize performance, it is designed to look up and cache the compressed files corresponding to uncompressed file names on startup.  This means that it will not be aware of compressed files being added or removed later on.
 
-# Example
-In case you have the following basic file structure
+# A few things to note
+**Slight warning**: There's currently no special treatment for dot files, so they can be requested by the client. This is a feature I plan to add soon, and it will behave the same way as in express.static, with the same default.
 
-* rootFolder
-    * index.html
-    * index.html.gz
-    * index.html.br
-    * test.html.gz
-    * main.js
+This package is currently in preview so please report any bugs on GitHub, and contribute to the repository if you want. I don't have any experience with testing tools so if someone wants to try and update the previous tests, that would be helpful. I previously removed them due to them having vulnerabilities, but the tests need updating anyway due to the new syntax.
 
-and you use set the *enableBrotli* flag to true, express-static-gzip will answer GET requests like this:
+There's potentially also security issues. Probably mainly around the treatment of URLs. Help with this would also be good, although I do also plan on looking into it myself as well. So keep that in mind if security is really important, even though I don't accept liability either way.
 
-> GET / >>> /my/rootFolder/index.html.br
+As with the original, unless you've scoped the middleware to a specific base path, the path "/" will result in sending the file set in the `index` option. Which can result in issues if you're serving a REST API from this server. You can either disable serving an index file by setting `index` to `false` in the options. Or you can register it after your route or middleware on that path.
 
-> GET /index.html >>> /my/rootFolder/index.html.br
-
-> GET /test.html >>> /my/rootFolder/test.html.gz
-
-> GET /main.js >>> /my/rootFolder/main.js
+And lastly, this one isn't too important: the files are only indexed when the middleware is first run. 
 
 
-[npm-url]: https://www.npmjs.com/package/express-static-gzip
-[npm-downloads-image]: https://img.shields.io/npm/dw/express-static-gzip
-[npm-version-image]: https://img.shields.io/npm/v/express-static-gzip
-[donate-paypal-image]: https://img.shields.io/badge/Donate-PayPal-green.svg
-[donate-url]: https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=J8F2P79BKCTG8
+# Available options
+* **`enableBrotli`**: boolean (default: **false**)
+    Enables support for the brotli compression, using the file extension ".br".
+
+* **`disableCompression`**: boolean (default: **false**)
+    Disables serving with compression and instead just serves the uncompressedRoot folder (the second argument in the middleware function). This can be useful for testing as you can set it to your build output folder or just your HTML source files.
+    
+* **`extensions`**: string[]
+    Fallback extensions to be used if a file can't be found. These are added on in turn until a match is found (during indexing), or none are found, resulting in the request being handled by the next middleware or route (or more likely sending a 404). For example, I like to use `js ["html"]` in order to for example send, "foo.html" in response for a request to just "/foo".
+
+* **`index`**: boolean **or** string (default: "index.html")
+    By default this module will send "index.html" files in response to a request on a directory (url ending with "/"). To disable this set false or to supply a new index file pass a string (like "index.htm").
+
+* **`customCompressions`**: [
+    {encodingName: string, fileExtension: string}
+]
+
+    Using this option, you can add any other compressions you would like. `encodingName` will be checked against the `Accept`-Header. `fileExtension` is used to find files using this compression. `fileExtension` *shouldn't* start with a dot.
+
+* **`orderPreference`**: string[] (default: ["br"])
+    This options allows overwriting the client's requested encoding preference (see [MDN](https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Accept-Encoding)) with a server side preference. Any encoding listed in `orderPreference` will be used first (if supported by the client) before falling back to the client's supported encodings. The order of entries in `orderPreference` is taken into account. The default will only affect things if brotli compression is available, supported and enabled, but is the default due to it having smaller sizes than gzip and browsers generally not indicating any preferences.
+
+
+# Possible new features
+    * Dot files handling and options (almost certainly)
+    * Proper error handling and warnings
+    * Slight optimisations
+    * Absolute file path support
+    * Custom headers (function and object versions)
+    * Weak server preferences (would only apply when client has no preferences). Alternatively, weights that are compared to the client's...?

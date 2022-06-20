@@ -1,26 +1,23 @@
 {
-  "name": "express-static-gzip",
-  "version": "2.1.7",
-  "description": "A simple middleware for serving folders of gzipped files with the sendFile method",
+  "name": "express-precompressed",
+  "version": "0.1.0",
+  "description": "A simple middleware for serving folders of compressed or uncompressed files",
   "main": "index.js",
-  "types": "index.d.ts",
   "files": [
     "util/",
     "LICENSE.md",
-    "README.md",
-    "index.d.ts"
+    "README.md"
   ],
-  "scripts": {
-    "test": "mocha test/*.spec.js",
-    "test:coverage": "nyc --reporter=lcov mocha"
-  },
+  "scripts": {},
   "keywords": [
     "express",
     "static",
     "gzip",
     "brotli",
     "serve",
-    "compression"
+    "compression",
+    "uncompressed",
+    "extensions"
   ],
   "author": "Nicholas Clack (Hedgehog125)",
   "repository": {
