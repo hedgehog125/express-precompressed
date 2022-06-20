@@ -1,6 +1,6 @@
 {
   "name": "express-precompressed",
-  "version": "0.1.0",
+  "version": "0.1.0a",
   "description": "A simple middleware for serving folders of compressed or uncompressed files",
   "main": "index.js",
   "files": [
@@ -22,7 +22,7 @@
   "author": "Nicholas Clack (Hedgehog125)",
   "repository": {
     "type": "git",
-    "url": "https://github.com/hedgehog125/express-static-gzip-sendfile.git"
+    "url": "https://github.com/hedgehog125/express-precompressed.git"
   },
   "license": "MIT",
   "dependencies": {
