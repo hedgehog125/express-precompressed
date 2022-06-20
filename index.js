@@ -17,7 +17,7 @@ const fs = require("fs/promises");
 const path = require("path");
 const mime = require("mime-types");
 
-__dirname = path.join(__dirname, "../../"); // Go to the root of the program
+__dirname = require.main.path; // Work in the folder the module was imported from in
 
 let sanitizeOptions = require("./util/options").sanitizeOptions;
 let findEncoding = require("./util/encoding-selection").findEncoding;

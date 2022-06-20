@@ -58,7 +58,7 @@ app.use(serveCompressed(<root>, <uncompressedRoot>, { // <-- Options
 
 // Your express routes and app.listen call
 ```
-**Note**: the paths currently have to be relative and are relative to the root of your program. <br>
+**Note**: the paths currently have to be relative. <br>
 **Note**: The angle brackets are part of the template rather than being a special syntax.
 
 This should behave more or less identically to express.static as `disableCompression` means it just serves the files in uncompressedRoot instead. This is how you do the very quick testing setup I mentioned previously. However, when you want to make a production version, you obviously want to actually enable the compression. You can do this by simply setting `disableCompression` to false. But, I'd suggest using a setup like this...
