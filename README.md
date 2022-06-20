@@ -41,7 +41,8 @@ And then call it like this:
 	These should have the original names just with the compression extension added onto the end
 
     uncompressedRoot -> The path to your fallback, uncompressed files you want to serve.
-	These are also used when you disable compression. I'd recommend using a different folder to root to keep things organised
+	These are also used when you disable compression.
+	I'd recommend using a different folder to root to keep things organised
 */
 app.use(serveCompressed(<root>, <uncompressedRoot>, { // <-- Options
 	/*
