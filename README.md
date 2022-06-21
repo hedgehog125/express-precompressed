@@ -4,13 +4,14 @@ Thanks TK and the other contributors for making the original repository: [expres
 
 ---
 
-express-precompressed is a middleware similar to express.static, but it also supports compression. The code is based off of express-static-gzip, but it's been adapted to use express' sendFile method instead of serve-static. This slightly reduced the total number of dependencies, and also gave me the flexibility I needed to support some new features. 
+express-precompressed is an express middleware for serving precompressed (or uncompressed) files with the correct headers. The code is based off of express-static-gzip, but it's been adapted to use express' sendFile method instead of serve-static. This slightly reduced the total number of dependencies, and also gave me the flexibility I needed to support some new features. 
 
-Speaking of which, here are the main features: <br>
-* Like express-static-gzip, express-precompressed supports *gzip*, *brotli* and can be configured for *any other* formats
-* Uncompressed fallback (which can now be a different folder). And a separate uncompressed mode (useful for testing)
+Speaking of which, the 3 new features are: <br>
 * Fallback extension support
-* Minimal resource usage as the files are pre-compressed
+* The uncompressed files can now be served from a separate folder, helping you keep things organised
+* A dedicated uncompressed mode, allowing you to use the same middleware during development
+
+And like the original, express-precompressed supports *gzip*, *brotli* and can be configured for *any other* formats. It's also resource efficient as it indexes on startup and doesn't have to compress the files as they are sent.
 
 
 # Requirements
