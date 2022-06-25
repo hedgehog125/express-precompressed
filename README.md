@@ -23,9 +23,9 @@ But like the original, it still requires you compress each file yourself when yo
 # Install
 As usual it's:
 ```bash
-npm install express-precompressed --save
+npm install express-precompressed
 ```
-And if you don't want to add it as a dependency, just remove the --save.
+(Apparently you don't need the --save anymore)
 
 # Getting Started
 Once you've installed the package as explained above, import it with 
@@ -113,14 +113,14 @@ You can also override the client's priority for different compressions with the 
 **Note**: other preferred formats and the client's preferred formats will be fallen back to if a preferred format isn't available for a file.
 
 ## Scoping to specific URL templates
-Like other middleware, you can also apply a pattern in app.use to only use it for some URLs. Normally this isn't necessary since if there isn't a matching file, the next middleware or route will handle the request instead. But if you do want to do this, make sure you create the necessary folders in both your compressed and uncompressed folders. e.g
+There's nothing special about the way you do it here but here's an example:
 
 ```js
 app.use("/static/", serveCompressed("gzippedFiles", "uncompressedFiles", {
 	extensions: ["html"]
 }));
 ```
-Where gzippedFiles and uncompressedFiles both contain a folder called static, which then contains all the files.
+You just put a path for the 1st argument in app.use and move the middleware to the second argument.
 
 ## A slight optimisation trick
 If you've got enough files that your server is taking a second to handle the first request, that's probably because the middleware's still indexing. Normally this takes less than 20 milliseconds but it can be more depending on the number of files and the speed of your server.
@@ -149,6 +149,12 @@ main();
 ```
 
 
+# Breaking changes
+## 0.2.0
+express.static is now used when compression is disabled. The only difference due to this should be that it detects new files (which can be helpful for development). But if you like, you can revert to the old behaviour by setting `options.useBuiltInWhenDisabled` to false.
+
+I also incorrectly claimed in the previous version that you needed to replicate the base path with folders. So now just put the files in the base folder.
+
 # A few things to note
 **Slight warning**: There's currently no special treatment for dot files, so they can be requested by the client. This is a feature I plan to add soon, and it will behave the same way as in express.static, with the same default.
 
@@ -173,6 +179,10 @@ And lastly, this one isn't too important: the files are only indexed when the mi
 * **`extensions`**: string[]
 
     Fallback extensions to be used if a file can't be found. These are added on in turn until a match is found (during indexing), or none are found, resulting in the request being handled by the next middleware or route (or more likely sending a 404). For example, I like to use `["html"]` in order to for example send, "foo.html" in response for a request to just "/foo".
+
+* **`useBuiltInWhenDisabled`**: boolean (default: **true**)
+
+    If express.static should be used instead of the custom solution when compression is disabled. The only difference should be that express.static detects new files, which can be helpful during development. 
 
 * **`index`**: boolean **or** string (default: "index.html")
 

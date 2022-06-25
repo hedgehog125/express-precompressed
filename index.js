@@ -1,9 +1,7 @@
 /*
 TODO
 
-Use try around readdir instead of stat to marginally speed up indexing 
 Dot files, headers object and headers function (as 2 different arguments because types. Or maybe not because index option)
-Does using a pattern in app.use work? It should result in a prefix which has to be accounted for by putting everything in a folder
 Absolute path support
 Proper error handling. Including checking if the uncompressed version exists
 Slight optimisations, reduce repetition in incomplete path by relying on the path in the key?
@@ -19,8 +17,8 @@ const mime = require("mime-types");
 
 __dirname = require.main.path; // Work in the folder the module was imported from in
 
-let sanitizeOptions = require("./util/options").sanitizeOptions;
-let findEncoding = require("./util/encoding-selection").findEncoding;
+const sanitizeOptions = require("./util/options").sanitizeOptions;
+const findEncoding = require("./util/encoding-selection").findEncoding;
 
 module.exports = expressPrecompressed;
 
@@ -37,6 +35,13 @@ function expressPrecompressed(root, uncompressedRoot, options) {
 	
 	let opts = sanitizeOptions(options);
 	if (opts.disableCompression) root = uncompressedRoot;
+	if (opts.disableCompression && opts.useBuiltInWhenDisabled) { // Compression isn't being used so just use express.static since they haven't disabled this behaviour
+		const expressStatic = require("express").static;
+
+		return expressStatic(uncompressedRoot, {
+			extensions: opts.extensions
+		});
+	}
 
 	let compressions = {};
 	let files = {};
@@ -162,7 +167,7 @@ function expressPrecompressed(root, uncompressedRoot, options) {
 		// Read the files in parrelel for efficiency
 		let finished;
 		let finishedPromise = new Promise(resolve => {
-			finished = resolve; // Let the file promises resolve this promise
+			finished = resolve; // Let the file promises resolve this promise by exposing this method
 		});
 		let fileTasks = [];
 		

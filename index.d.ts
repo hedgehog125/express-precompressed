@@ -22,43 +22,55 @@
 	  */
 	 interface ExpressStaticGzipOptions {
  
-		 /**
+		/**
 		  * Add any other compressions not supported by default. 
 		  * `encodingName` will be checked against the request's Accept-Header. 
 		  * `fileExtension` is used to find files using this compression.
 		  * `fileExtension` does not require a dot (e.g. 'gz' not '.gz').
 		  * @default null
-		  */
-		 customCompressions?: Compression[];
+		*/
+		customCompressions?: Compression[];
  
-		 /**
+		/**
 		  * Enables support for the brotli compression, using file extension 'br' (e.g. 'index.html.br'). 
 		  * @default false
-		  */
-		 enableBrotli?: boolean;
+		*/
+		enableBrotli?: boolean;
+
+		/**
+		  * Disables serving with compression and instead just serves the `uncompressedRoot` folder (the second argument in the middleware function). This can be useful for testing as you can set it to your build output folder, or just where you put your HTML source files. 
+		  * @default false
+		*/
+		disableCompression?: boolean;
  
-		 /**
+		/**
 		  * By default this module will send "index.html" files in response to a request on a directory. 
 		  * To disable this set false or to supply a new index pass a string.
-		  * @default 'index.html'
-		  */
-		 index?: boolean | string;
+		  * @default "index.html"
+		*/
+		index?: boolean | string;
  
-		 /**
+		/**
 		  * Allows overwriting the client's requested encoding preference 
 		  * (see [MDN](https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Accept-Encoding)) 
 		  * with a server side preference. Any encoding listed in orderPreference will be 
 		  * used first (if supported by the client) before falling back to the client's supported encodings. 
 		  * The order of entries in orderPreference is taken into account.
-		  * @default null
-		  */
-		 orderPreference?: string[];
+		  * @default ["br"]
+		*/
+		orderPreference?: string[];
  
-		 /**
+		/**
 		  * Extensions to use when none was provided in the request and it doesn't match with a file
 		  * @default null
-		  */
-		 extensions?: string[]
+		*/
+		extensions?: string[];
+
+		/**
+		  * If express.static should be used instead of the custom solution when compression is disabled. The only difference should be that express.static detects new files, which can be helpful during development. Defaults to true
+		  * @default true
+		*/
+		useBuiltInWhenDisabled?: boolean;
 	 }
  
 	 interface Compression {

@@ -17,23 +17,28 @@ function sanitizeOptions(userOptions) {
 	let sanitizedOptions = {
 		index: getIndexValue(userOptions),
 		disableCompression: userOptions.disableCompression?? false,
-		orderPreference: ["br"]
+		orderPreference: ["br"],
+		useBuiltInWhenDisabled: true
 	}
 
-	if (typeof (userOptions.enableBrotli) !== "undefined") {
+	if (userOptions.enableBrotli !== undefined) {
 		sanitizedOptions.enableBrotli = !!userOptions.enableBrotli;
 	}
 
-	if (typeof (userOptions.customCompressions) === "object") {
+	if (Array.isArray(userOptions.customCompressions)) {
 		sanitizedOptions.customCompressions = userOptions.customCompressions;
 	}
 
-	if (typeof (userOptions.orderPreference) === "object") {
+	if (Array.isArray(userOptions.orderPreference)) {
 		sanitizedOptions.orderPreference = userOptions.orderPreference;
 	}
 
 	if (Array.isArray(userOptions.extensions)) {
 		sanitizedOptions.extensions = userOptions.extensions;
+	}
+
+	if (userOptions.useBuiltInWhenDisabled !== undefined) {
+		sanitizedOptions.useBuiltInWhenDisabled = !!userOptions.useBuiltInWhenDisabled;
 	}
 
 	return sanitizedOptions;
@@ -44,9 +49,9 @@ function sanitizeOptions(userOptions) {
  * @param {expressStaticGzip.ExpressStaticGzipOptions} options 
  */
 function getIndexValue(options) {
-	if (typeof (options.indexFromEmptyFile) == "undefined" && typeof (options.index) != "undefined") {
+	if (options.indexFromEmptyFile === undefined && options.index !== undefined) {
 		return options.index;
-	} else if (typeof (options.index) == "undefined" && typeof (options.indexFromEmptyFile) != "undefined") {
+	} else if (options.index === undefined && options.indexFromEmptyFile !== undefined) {
 		return options.indexFromEmptyFile;
 	} else {
 		return "index.html";
