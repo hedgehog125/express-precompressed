@@ -93,7 +93,7 @@ If you want to add custom compressions, see below.
 
 
 # More advanced use cases
-## Compression
+## Other compression formats
 Other compression formats can be added with the `customCompressions` option. For example, to add deflate support, just add this to your options:
 
 ```js
