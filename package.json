@@ -1,6 +1,6 @@
 {
   "name": "express-precompressed",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "A simple middleware for serving folders of compressed or uncompressed files",
   "main": "index.js",
   "files": [
